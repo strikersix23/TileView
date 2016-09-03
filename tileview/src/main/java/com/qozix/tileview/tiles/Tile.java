@@ -8,10 +8,12 @@ import android.graphics.Rect;
 import android.view.animation.AnimationUtils;
 
 import com.qozix.tileview.detail.DetailLevel;
+import com.qozix.tileview.detail.DetailLevelManager;
 import com.qozix.tileview.geom.FloatMathHelper;
 import com.qozix.tileview.graphics.BitmapProvider;
 
 import java.lang.ref.WeakReference;
+import java.util.Objects;
 
 public class Tile {
 
@@ -265,7 +267,9 @@ public class Tile {
     int hash = 17;
     hash = hash * 31 + getColumn();
     hash = hash * 31 + getRow();
-    hash = hash * 31 + (int) (1000 * getDetailLevel().getScale());
+    hash = hash * 31 + (int) ( 1000 * getDetailLevel().getScale() );
+    DetailLevelManager.LevelType levelType = getDetailLevel().getLevelType();
+    if( levelType != null ) hash = hash * 31 + levelType.hashCode();
     return hash;
   }
 
@@ -278,7 +282,10 @@ public class Tile {
       Tile m = (Tile) o;
       return m.getRow() == getRow()
         && m.getColumn() == getColumn()
-        && m.getDetailLevel().getScale() == getDetailLevel().getScale();
+        && m.getDetailLevel().getScale() == getDetailLevel().getScale()
+        && ( m.getDetailLevel().getLevelType() == null
+              ? getDetailLevel().getLevelType() == null
+              : m.getDetailLevel().getLevelType().equals( getDetailLevel().getLevelType() ) );
     }
     return false;
   }

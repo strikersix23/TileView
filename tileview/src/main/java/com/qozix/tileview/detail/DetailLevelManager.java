@@ -5,11 +5,17 @@ import android.graphics.Rect;
 import com.qozix.tileview.geom.FloatMathHelper;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 public class DetailLevelManager {
 
-  protected LinkedList<DetailLevel> mDetailLevelLinkedList = new LinkedList<DetailLevel>();
+  public interface LevelType {
+
+  }
+
+  private Map<LevelType, LinkedList<DetailLevel>> mDetailLevelLinkedList = new HashMap<>();
 
   private DetailLevelChangeListener mDetailLevelChangeListener;
 
@@ -27,6 +33,9 @@ public class DetailLevelManager {
   private Rect mViewport = new Rect();
   private Rect mComputedViewport = new Rect();
   private Rect mComputedScaledViewport = new Rect();
+
+  private boolean dirty;
+  private LevelType mCurrentLevelType;
 
   private DetailLevel mCurrentDetailLevel;
 
@@ -63,6 +72,13 @@ public class DetailLevelManager {
     mBaseWidth = width;
     mBaseHeight = height;
     update();
+  }
+
+  public void setLevelType(LevelType levelType) {
+    if( this.mCurrentLevelType == levelType ) return;
+    this.mCurrentLevelType = levelType;
+    this.dirty = true;
+    this.update();
   }
 
   public void setDetailLevelChangeListener( DetailLevelChangeListener detailLevelChangeListener ) {
@@ -143,30 +159,43 @@ public class DetailLevelManager {
   }
 
   protected void update() {
-    boolean detailLevelChanged = false;
-    if( !mDetailLevelLocked ) {
+    if(this.dirty || !mDetailLevelLocked ) {
       DetailLevel matchingLevel = getDetailLevelForScale();
       if( matchingLevel != null ) {
-        detailLevelChanged = !matchingLevel.equals( mCurrentDetailLevel );
+        this.dirty = !matchingLevel.equals( mCurrentDetailLevel );
         mCurrentDetailLevel = matchingLevel;
       }
     }
     mScaledWidth = FloatMathHelper.scale( mBaseWidth, mScale );
     mScaledHeight = FloatMathHelper.scale( mBaseHeight, mScale );
-    if( detailLevelChanged ) {
+    if( this.dirty ) {
       if( mDetailLevelChangeListener != null ) {
         mDetailLevelChangeListener.onDetailLevelChanged( mCurrentDetailLevel );
       }
+      this.dirty = false;
     }
   }
 
-  public void addDetailLevel( float scale, Object data, int tileWidth, int tileHeight ) {
-    DetailLevel detailLevel = new DetailLevel( this, scale, data, tileWidth, tileHeight );
-    if( mDetailLevelLinkedList.contains( detailLevel ) ) {
-      return;
+  public void addDetailLevel( float scale, Object data, int tileWidth, int tileHeight) {
+    this.addDetailLevel(scale, data, tileWidth, tileHeight, null);
+  }
+
+  public void addDetailLevel( float scale, Object data, int tileWidth, int tileHeight, LevelType levelType) {
+    DetailLevel detailLevel = new DetailLevel( this, scale, data, tileWidth, tileHeight, levelType);
+    LinkedList<DetailLevel> levels = mDetailLevelLinkedList.get(levelType);
+    if( levels != null){
+      if(levels.contains( detailLevel ) ) {
+        return;
+      } else {
+        levels.add( detailLevel );
+        Collections.sort( levels );
+      }
+    } else {
+      //a list with one item does not need to be sorted, just add the new list to the map
+      levels = new LinkedList<>();
+      levels.add(detailLevel);
+      mDetailLevelLinkedList.put(levelType, levels);
     }
-    mDetailLevelLinkedList.add( detailLevel );
-    Collections.sort( mDetailLevelLinkedList );
     update();
   }
 
@@ -174,16 +203,17 @@ public class DetailLevelManager {
     if( mDetailLevelLinkedList.size() == 0 ) {
       return null;
     }
-    if( mDetailLevelLinkedList.size() == 1 ) {
-      return mDetailLevelLinkedList.get( 0 );
+    LinkedList<DetailLevel> levels = mDetailLevelLinkedList.get(mCurrentLevelType);
+    if( levels.size() == 1 ) {
+      return levels.get( 0 );
     }
     DetailLevel match = null;
-    int index = mDetailLevelLinkedList.size() - 1;
+    int index = levels.size() - 1;
     for( int i = index; i >= 0; i-- ) {
-      match = mDetailLevelLinkedList.get( i );
+      match = levels.get( i );
       if( match.getScale() < mScale ) {
         if( i < index ) {
-          match = mDetailLevelLinkedList.get( i + 1 );
+          match = levels.get( i + 1 );
         }
         break;
       }
@@ -192,8 +222,10 @@ public class DetailLevelManager {
   }
 
   public void invalidateAll(){
-    for( DetailLevel detailLevel : mDetailLevelLinkedList ){
-      detailLevel.invalidate();
+    for( LinkedList<DetailLevel> levels : mDetailLevelLinkedList.values() ) {
+      for (DetailLevel detailLevel : levels) {
+        detailLevel.invalidate();
+      }
     }
   }
 

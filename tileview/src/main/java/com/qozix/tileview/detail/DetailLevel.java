@@ -14,12 +14,22 @@ public class DetailLevel implements Comparable<DetailLevel> {
   private int mTileWidth;
   private int mTileHeight;
   private Object mData;
+  private DetailLevelManager.LevelType mLevelType;
 
   private DetailLevelManager mDetailLevelManager;
 
   private StateSnapshot mLastStateSnapshot;
 
   private Set<Tile> mTilesVisibleInViewport = new HashSet<>();
+
+  public DetailLevel( DetailLevelManager detailLevelManager, float scale, Object data, int tileWidth, int tileHeight, DetailLevelManager.LevelType levelType ) {
+    mDetailLevelManager = detailLevelManager;
+    mScale = scale;
+    mData = data;
+    mTileWidth = tileWidth;
+    mTileHeight = tileHeight;
+    mLevelType = levelType;
+  }
 
   public DetailLevel( DetailLevelManager detailLevelManager, float scale, Object data, int tileWidth, int tileHeight ) {
     mDetailLevelManager = detailLevelManager;
@@ -112,6 +122,10 @@ public class DetailLevel implements Comparable<DetailLevel> {
     return mData;
   }
 
+  public DetailLevelManager.LevelType getLevelType() {
+    return mLevelType;
+  }
+
   @Override
   public int compareTo( @NonNull DetailLevel detailLevel ) {
     return (int) Math.signum( getScale() - detailLevel.getScale() );
@@ -124,13 +138,16 @@ public class DetailLevel implements Comparable<DetailLevel> {
     }
     if( object instanceof DetailLevel ) {
       DetailLevel detailLevel = (DetailLevel) object;
-      return mScale == detailLevel.getScale() && mData != null && mData.equals( detailLevel.getData() );
+      return mScale == detailLevel.getScale()
+              && mData != null && mData.equals( detailLevel.getData() )
+              && mLevelType != null && mLevelType.equals( detailLevel.getLevelType() );
     }
     return false;
   }
 
   @Override
   public int hashCode() {
+    //TODO should this hashCode mix with the mLevelType hashcode?
     long bits = (Double.doubleToLongBits( getScale() ) * 43);
     return (((int) bits) ^ ((int) (bits >> 32)));
   }

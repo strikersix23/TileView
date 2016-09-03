@@ -351,6 +351,21 @@ public class TileView extends ZoomPanLayout implements
   }
 
   /**
+   * Register a tile set to be used for a particular detail level.
+   * Each tile set to be used must be registered using this method,
+   * and at least one tile set must be registered for the TileView to render any tiles.
+   *
+   * @param detailScale Scale at which the TileView should use the tiles in this set.
+   * @param data        An arbitrary object of any type that is passed to the (Adapter|Decoder) for each tile on this level.
+   * @param tileWidth   Size of each tiled column.
+   * @param tileHeight  Size of each tiled row.
+   * @param levelType   Type of level, detail-levels can have the same scale but different looks.
+   */
+  public void addDetailLevel(float detailScale, Object data, int tileWidth, int tileHeight, DetailLevelManager.LevelType levelType ) {
+    mDetailLevelManager.addDetailLevel( detailScale, data, tileWidth, tileHeight, levelType );
+  }
+
+  /**
    * Pads the viewport by the number of pixels passed.  e.g., setViewportPadding( 100 ) instructs the
    * TileView to interpret it's actual viewport offset by 100 pixels in each direction (top, left,
    * right, bottom), so more tiles will qualify for "visible" status when intersections are calculated.
