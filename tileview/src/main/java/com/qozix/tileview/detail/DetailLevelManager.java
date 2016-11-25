@@ -200,10 +200,10 @@ public class DetailLevelManager {
   }
 
   public DetailLevel getDetailLevelForScale() {
-    if( mDetailLevelLinkedList.size() == 0 ) {
+    LinkedList<DetailLevel> levels = mDetailLevelLinkedList.get(mCurrentLevelType);
+    if( levels == null || levels.size() == 0 ) {
       return null;
     }
-    LinkedList<DetailLevel> levels = mDetailLevelLinkedList.get(mCurrentLevelType);
     if( levels.size() == 1 ) {
       return levels.get( 0 );
     }
